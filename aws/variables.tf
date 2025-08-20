@@ -10,12 +10,6 @@ variable "prefix" {
   description = "Prefix for resource names"
 }
 
-variable "k8s_version" {
-  default = "1.33"
-  type = string
-  description = "Kubernetes version to use for the EKS cluster"
-}
-
 variable "azs_count" {
   default = 3
   type = number
