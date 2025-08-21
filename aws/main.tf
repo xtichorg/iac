@@ -22,6 +22,7 @@ locals {
     min_size = 2
     max_size = 6
     desired_size = 2
+    retantion_in_days = 3
   }
 
   tags = {
@@ -61,6 +62,15 @@ module "eks" {
 
   name = local.eks.name
   kubernetes_version = local.eks.kubernetes_version
+
+  # not for prod:
+  deletion_protection = false
+  endpoint_public_access = true
+
+  enable_cluster_creator_admin_permissions = true
+
+
+  cloudwatch_log_group_retention_in_days = local.eks.retantion_in_days
 
   addons = {
     coredns = {}
