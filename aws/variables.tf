@@ -5,13 +5,13 @@ variable "aws_region" {
 }
 
 variable "prefix" {
-  default = "x"
-  type = string
+  default     = "x"
+  type        = string
   description = "Prefix for resource names"
 }
 
 variable "azs_count" {
-  default = 3
-  type = number
+  default     = 3
+  type        = number
   description = "Number of availability zones to use for the VPC"
 }

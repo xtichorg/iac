@@ -1,5 +1,17 @@
-provider "aws"{
+provider "aws" {
   region = var.aws_region
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
+    }
+  }
 }
 
 data "aws_availability_zones" "available" {
@@ -17,12 +29,12 @@ locals {
   }
 
   eks = {
-    name = "${var.prefix}-eks"
+    name               = "${var.prefix}-eks"
     kubernetes_version = "1.33"
-    min_size = 2
-    max_size = 6
-    desired_size = 2
-    retantion_in_days = 3
+    min_size           = 2
+    max_size           = 6
+    desired_size       = 2
+    retantion_in_days  = 3
   }
 
   tags = {
@@ -31,21 +43,23 @@ locals {
 }
 
 module "vpc" {
-  source = "terraform-aws-modules/vpc/aws"
+  source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.0"
 
   name = local.vpc.name
   cidr = local.vpc.cidr
 
-  azs = local.vpc.azs
+  azs             = local.vpc.azs
   private_subnets = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 4, k)]
   public_subnets  = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 8, k + 48)]
   intra_subnets   = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 8, k + 52)]
 
   enable_nat_gateway = true
   single_nat_gateway = true
-  
-    public_subnet_tags = {
+  # enable_dns_hostnames = true
+
+
+  public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
   }
 
@@ -57,14 +71,14 @@ module "vpc" {
 }
 
 module "eks" {
-  source = "terraform-aws-modules/eks/aws"
+  source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.1"
 
-  name = local.eks.name
+  name               = local.eks.name
   kubernetes_version = local.eks.kubernetes_version
 
   # not for prod:
-  deletion_protection = false
+  deletion_protection    = false
   endpoint_public_access = true
 
   enable_cluster_creator_admin_permissions = true
@@ -83,14 +97,14 @@ module "eks" {
     }
   }
 
-  vpc_id = module.vpc.vpc_id
+  vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
   eks_managed_node_groups = {
     "${var.prefix}-eks-nodegroup" = {
       ami_type       = "BOTTLEROCKET_x86_64"
       instance_types = ["t3.small"]
-      capacity_type = "SPOT"
+      capacity_type  = "SPOT"
 
       min_size = local.eks.min_size
       max_size = local.eks.max_size
