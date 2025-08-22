@@ -43,9 +43,9 @@ module "eks" {
 
   eks_managed_node_groups = {
     "${var.prefix}-eks-nodegroup" = {
-      ami_type       = "BOTTLEROCKET_x86_64"
-      instance_types = ["t3.small"]
-      capacity_type  = "SPOT"
+      ami_type                       = "BOTTLEROCKET_x86_64"
+      instance_types                 = ["t3.small"]
+      capacity_type                  = "SPOT"
       use_latest_ami_release_version = "false"
 
       min_size = local.eks.min_size

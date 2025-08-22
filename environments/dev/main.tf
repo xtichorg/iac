@@ -1,4 +1,6 @@
 terraform {
+  required_version = "~> 1"
+
   backend "s3" {
     bucket       = "tf-state-bucket-iac"
     key          = "xtichorg/iac/dev"
@@ -11,8 +13,8 @@ module "aws_eks" {
   source = "../../infrastructure/aws"
 
   aws_region = "us-east-1"
-  prefix = "dev"
-  azs_count = 3
+  prefix     = "dev"
+  azs_count  = 3
 
 }
 

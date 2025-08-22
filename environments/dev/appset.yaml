@@ -5,18 +5,18 @@ metadata:
   namespace: argocd
 spec:
   goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
+  goTemplateOptions: [ "missingkey=error" ]
   generators:
     - scmProvider:
         filters:
           - branchMatch: "^(dev|feature/.*|bugfix/.*|release/.*)$"
         cloneProtocol: https
-#        cloneProtocol: ssh
+        #        cloneProtocol: ssh
         github:
           organization: xtichorg
           allBranches: true
         requeueAfterSeconds: 60
-#        requeueAfterSeconds: 300
+  #        requeueAfterSeconds: 300
   template:
     metadata:
       name: '{{ .repository }}-{{ .branch | lower | replace "/" "-" }}'
