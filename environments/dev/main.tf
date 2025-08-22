@@ -9,17 +9,30 @@ terraform {
   }
 }
 
-module "aws_eks" {
-  source = "../../infrastructure/aws"
-
+locals {
   aws_region = "us-east-1"
   prefix     = "dev"
   azs_count  = 3
+}
+
+module "aws_eks" {
+  source = "../../infrastructure/aws"
+
+  prefix    = local.prefix
+  azs_count = local.azs_count
+
+  providers = {
+    aws = aws
+  }
 
 }
 
 module "argocd" {
   source = "../../infrastructure/argocd"
+
+  providers = {
+    helm = helm
+  }
 
   depends_on = [module.aws_eks]
 }
@@ -27,36 +40,25 @@ module "argocd" {
 module "applicationset" {
   source = "../../modules/applicationset"
 
-  manifest_yaml = "./appset.yaml"
+  providers = {
+    helm = helm
+  }
 
   depends_on = [module.argocd]
 }
 
-provider "helm" {
-  kubernetes = {
-    host                   = module.aws_eks.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.aws_eks.eks.cluster_certificate_authority_data)
-    exec = {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.aws_eks.eks.cluster_name]
-    }
-  }
-}
-
 data "aws_eks_cluster" "main" {
   name = module.aws_eks.eks.cluster_name
+
+  depends_on = [module.aws_eks]
 }
 
 data "aws_eks_cluster_auth" "main" {
   name = module.aws_eks.eks.cluster_name
+
+  depends_on = [module.aws_eks]
 }
 
-provider "kubernetes" {
-  host                   = data.aws_eks_cluster.main.endpoint
-  cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-  token                  = data.aws_eks_cluster_auth.main.token
-}
 
 output "kubectl_config_command" {
   description = "Command to configure kubectl"

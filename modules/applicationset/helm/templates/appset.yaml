@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: {{ .Values.githubOrg }}
+  namespace: {{ .Values.namespace | default "argocd" }}
+spec:
+  goTemplate: true
+  goTemplateOptions: [ "missingkey=error" ]
+  generators:
+    - scmProvider:
+        filters:
+          - branchMatch: {{ .Values.branchMatch | default "^(dev|feature/.*|bugfix/.*|release/.*)$"}}
+        cloneProtocol: {{ .Values.cloneProtocol | default "https" }}
+        github:
+          organization: {{ .Values.githubOrg }}
+          allBranches: true
+        requeueAfterSeconds: {{ .Values.replicaCount | default 300 }}
+  template:
+    metadata:
+      name: {{ include "applicationset.appname" . }}
+    spec:
+      destination:
+        namespace: {{ include "applicationset.appname" . }}
+        server: https://kubernetes.default.svc
+      project: default
+      source:
+        path: helm/
+        repoURL: '{{`{{ .url }}`}}'
+        targetRevision: '{{`{{ .branch }}`}}'
+      syncPolicy:
+        managedNamespaceMetadata:
+          annotations:
+            argocd.argoproj.io/tracking-id: >-
+              {{ include "applicationset.trackid" . }}
+        automated:
+          enabled: true
+          selfHeal: true
+          prune: true
+        syncOptions:
+          - CreateNamespace=true
