@@ -6,4 +6,11 @@ terraform {
     }
   }
 }
-resource "kubernetes_namespace" "" {}
+
+variable "manifest_yaml" {
+  type = string
+}
+
+resource "kubernetes_manifest" "applicationset" {
+  manifest = yamldecode(file(var.manifest_yaml))
+}

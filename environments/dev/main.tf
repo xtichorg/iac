@@ -16,6 +16,20 @@ module "aws_eks" {
 
 }
 
+module "argocd" {
+  source = "../../infrastructure/argocd"
+
+  depends_on = [module.aws_eks]
+}
+
+module "applicationset" {
+  source = "../../modules/applicationset"
+
+  manifest_yaml = "./appset.yaml"
+
+  depends_on = [module.argocd]
+}
+
 provider "helm" {
   kubernetes = {
     host                   = module.aws_eks.eks.cluster_endpoint
@@ -28,10 +42,18 @@ provider "helm" {
   }
 }
 
-module "argocd" {
-  source = "../../infrastructure/argocd"
+data "aws_eks_cluster" "main" {
+  name = module.aws_eks.eks.cluster_name
+}
 
-  depends_on = [module.aws_eks]
+data "aws_eks_cluster_auth" "main" {
+  name = module.aws_eks.eks.cluster_name
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.main.token
 }
 
 output "kubectl_config_command" {
