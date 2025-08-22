@@ -2,6 +2,20 @@ provider "aws" {
   region = var.aws_region
 }
 
+# data "aws_eks_cluster" "main" {
+#   name = module.eks.cluster_name
+# }
+#
+# data "aws_eks_cluster_auth" "main" {
+#   name = module.eks.cluster_name
+# }
+#
+# provider "kubernetes" {
+#   host                   = data.aws_eks_cluster.main.endpoint
+#   cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+#   token                  = data.aws_eks_cluster_auth.main.token
+# }
+
 provider "helm" {
   kubernetes = {
     host                   = module.eks.cluster_endpoint
@@ -105,6 +119,7 @@ module "eks" {
       ami_type       = "BOTTLEROCKET_x86_64"
       instance_types = ["t3.small"]
       capacity_type  = "SPOT"
+      use_latest_ami_release_version = "false"
 
       min_size = local.eks.min_size
       max_size = local.eks.max_size
