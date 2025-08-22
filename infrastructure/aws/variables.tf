@@ -5,7 +5,7 @@ variable "aws_region" {
 }
 
 variable "prefix" {
-  default     = "x"
+  default     = "iac"
   type        = string
   description = "Prefix for resource names"
 }

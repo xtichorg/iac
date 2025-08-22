@@ -1,46 +1,4 @@
-provider "aws" {
-  region = var.aws_region
-}
-
-# data "aws_eks_cluster" "main" {
-#   name = module.eks.cluster_name
-# }
-#
-# data "aws_eks_cluster_auth" "main" {
-#   name = module.eks.cluster_name
-# }
-#
-# provider "kubernetes" {
-#   host                   = data.aws_eks_cluster.main.endpoint
-#   cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
-#   token                  = data.aws_eks_cluster_auth.main.token
-# }
-
-provider "helm" {
-  kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec = {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-    }
-  }
-}
-
-data "aws_availability_zones" "available" {
-  filter {
-    name   = "opt-in-status"
-    values = ["opt-in-not-required"]
-  }
-}
-
 locals {
-  vpc = {
-    name = "${var.prefix}-vpc"
-    cidr = "10.0.0.0/16"
-    azs  = slice(data.aws_availability_zones.available.names, 0, var.azs_count)
-  }
 
   eks = {
     name               = "${var.prefix}-eks"
@@ -51,37 +9,6 @@ locals {
     retantion_in_days  = 3
   }
 
-  tags = {
-    project = "iac"
-  }
-}
-
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 6.0"
-
-  name = local.vpc.name
-  cidr = local.vpc.cidr
-
-  azs             = local.vpc.azs
-  private_subnets = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 4, k)]
-  public_subnets  = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 8, k + 48)]
-  intra_subnets   = [for k, v in local.vpc.azs : cidrsubnet(local.vpc.cidr, 8, k + 52)]
-
-  enable_nat_gateway = true
-  single_nat_gateway = true
-  # enable_dns_hostnames = true
-
-
-  public_subnet_tags = {
-    "kubernetes.io/role/elb" = 1
-  }
-
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb" = 1
-  }
-
-  tags = local.tags
 }
 
 module "eks" {
@@ -147,4 +74,8 @@ module "eks" {
       EOT
     }
   }
+}
+
+output "eks" {
+  value = module.eks
 }
